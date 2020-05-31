@@ -1,25 +1,105 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Week2-Project"
+author: "hyhy"
+date: "5/31/2020"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
 ---
 
+## Summary
+```{r setoptions, echo=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+```
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
 
-## Loading and preprocessing the data
+This project inludes several parts:  
 
+1. Code for reading in the dataset and/or processing the data
 
+2. Histogram of the total number of steps taken each day
 
-## What is mean total number of steps taken per day?
+3. Mean and median number of steps taken each day
 
+4. Time series plot of the average number of steps taken
 
+5. The 5-minute interval that, on average, contains the maximum number of steps
 
-## What is the average daily activity pattern?
+6. Code to describe and show a strategy for imputing missing data
 
+7. Histogram of the total number of steps taken each day after missing values are imputed
 
+8. Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
 
-## Imputing missing values
+All of the R code needed to reproduce the results (numbers, plots, etc.) in the report
 
+## Code and plot
 
+### Code for reading in the dataset and/or processing the data
 
-## Are there differences in activity patterns between weekdays and weekends?
+```{r readcode}
+data <- read.csv("activity.csv")
+data$date <- as.Date(data$date)
+```
+
+### Histogram of the total number of steps taken each day
+
+```{r Hist1}
+a <- aggregate(data$steps, list(Date=data$date), sum)
+names(a) <- c("Date", "Total_Steps")
+hist(a$Total_Steps, breaks=7, xlab="Total steps in one day", 
+     main="Histogram of one day's total steps")
+```
+
+### Mean and median number of steps taken each day
+
+```{r summary}
+summary(a)
+```
+
+### Time series plot of the average number of steps taken
+
+```{r avg_plot}
+b <- aggregate(data$steps, list(Date=data$date), mean)
+b <- b[complete.cases(b),]
+names(b) <- c("Date", "Avg_Step")
+with(b, plot(Date, Avg_Step, main="Average steps in one day", type="l"))
+```
+
+### The 5-minute interval that, on average, contains the maximum number of steps
+
+```{r max_steps}
+b[which.max(b$Avg_Step),]
+```
+
+### Code to describe and show a strategy for imputing missing data
+
+```{r impute}
+library(impute)
+c <- as.data.frame(a)
+c$num <- seq(1:61)
+c <- as.data.frame(impute.knn(as.matrix(c[,-1]))$data)
+c <- as.data.frame(cbind(a$Date, c[,-2]))
+names(c) <- c("Date", "Total_Steps")
+```
+
+### Histogram of the total number of steps taken each day after missing values are imputed
+
+```{r hist2}
+hist(as.numeric(c$Total_Steps), xlab="Total steps in one day", 
+     main="Histogram of one day's total steps(After impute)")
+```
+
+### Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+```{r plot2}
+library(lattice)
+d <- as.data.frame(b)
+d$Date <- as.Date(d$Date)
+d$fac <- "Weekdays"
+d[weekdays(d$Date)=="Saturday"| weekdays(d$Date)
+     =="Sunday",]$fac<-"Weekends"
+d$fac <- as.factor(d$fac)
+with(d, xyplot(Avg_Step~Date|fac, layout=c(2,1), type="l"))
+```
